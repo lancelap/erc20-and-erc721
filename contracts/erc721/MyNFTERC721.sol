@@ -258,7 +258,8 @@ contract MyNFTERC721 is IERC721, IERC721Metadata, IERC165 {
     function tokenURI(
         uint256 tokenId
     ) external view override returns (string memory) {
-        // здесь обычно проверяем, что токен существует
+        if (!_exists(tokenId)) revert ERC721NonexistentToken(tokenId);
+
         return _tokenURI[tokenId];
     }
 }
