@@ -48,7 +48,7 @@ contract MyNFTERC721 is IERC721, IERC721Metadata, IERC165 {
             interfaceId == 0x5b5e139f;
     }
 
-    function balanceOf(address owner) public view returns (uint256) {
+    function balanceOf(address owner) public view override returns (uint256) {
         if (owner == address(0)) revert ERC721InvalidOwner(owner);
 
         return _balanceOf[owner];
@@ -119,11 +119,7 @@ contract MyNFTERC721 is IERC721, IERC721Metadata, IERC165 {
         return true;
     }
 
-    function _mint(
-        address to,
-        uint256 tokenId,
-        string memory uri
-    ) internal onlyOwner {
+    function _mint(address to, uint256 tokenId, string calldata uri) internal {
         if (to == address(0)) {
             revert ERC721InvalidReceiver(to);
         }
@@ -136,6 +132,14 @@ contract MyNFTERC721 is IERC721, IERC721Metadata, IERC165 {
         _tokenURI[tokenId] = uri;
 
         emit Transfer(address(0), to, tokenId);
+    }
+
+    function mintOwner(
+        address to,
+        uint256 tokenId,
+        string calldata uri
+    ) external onlyOwner {
+        _mint(to, tokenId, uri);
     }
 
     function _approve(address to, uint256 tokenId) internal {
@@ -172,8 +176,8 @@ contract MyNFTERC721 is IERC721, IERC721Metadata, IERC165 {
         uint256 tokenId,
         bytes memory data
     ) internal {
-        if (!(_isApprovedOrOwner(msg.sender, tokenId)))
-            revert ERC721NotApprovedOrOwner(from, tokenId);
+        if (!_isApprovedOrOwner(msg.sender, tokenId))
+            revert ERC721NotApprovedOrOwner(msg.sender, tokenId);
 
         _transfer(from, to, tokenId);
         require(
@@ -182,12 +186,11 @@ contract MyNFTERC721 is IERC721, IERC721Metadata, IERC165 {
         );
     }
 
-
     function safeTransferFrom(
         address from,
         address to,
         uint256 tokenId
-    ) public payable override {
+    ) public override {
         _safeTransfer(from, to, tokenId, "");
     }
 
@@ -196,7 +199,7 @@ contract MyNFTERC721 is IERC721, IERC721Metadata, IERC165 {
         address to,
         uint256 tokenId,
         bytes calldata data
-    ) public payable override {
+    ) public override {
         _safeTransfer(from, to, tokenId, data);
     }
 
@@ -204,24 +207,21 @@ contract MyNFTERC721 is IERC721, IERC721Metadata, IERC165 {
         address from,
         address to,
         uint256 tokenId
-    ) external payable override {
+    ) external override {
         if (!(_isApprovedOrOwner(msg.sender, tokenId)))
             revert ERC721NotApprovedOrOwner(from, tokenId);
         _transfer(from, to, tokenId);
     }
 
-    function approve(address to, uint256 tokenId) external payable override {
-        address owner = _ownerOf[tokenId];
-        if (!(_exists(tokenId))) revert ERC721NonexistentToken(tokenId);
-        if (!(msg.sender == owner || isApprovedForAll(owner, msg.sender)))
-            revert ERC721InvalidOwner(owner);
+    function approve(address to, uint256 tokenId) external override {
+        if (!_exists(tokenId)) revert ERC721NonexistentToken(tokenId);
 
-        // clean approve
-        _approve(address(0), tokenId);
-        // set token approve
-        _tokenApprovals[tokenId] = to;
-        // emit Approve
-        emit Approval(owner, to, tokenId);
+        address owner = ownerOf(tokenId);
+        if (!(msg.sender == owner || isApprovedForAll(owner, msg.sender))) {
+            revert ERC721InvalidOwner(owner);
+        }
+
+        _approve(to, tokenId); // sets _tokenApprovals[tokenId] and emits Approval(owner, to, tokenId)
     }
 
     function setApprovalForAll(

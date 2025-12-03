@@ -1,0 +1,42 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-45911bcc64b2c1be3ba73a0e9a7ec47fb2ecce12",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "contracts/erc20/MyTokenERC20.sol": "project/contracts/erc20/MyTokenERC20.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/erc20/IERC20.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\n/**\n * @title IERC20\n * @dev Interface ERC20\n */\ninterface IERC20 {\n    // Events\n    event Transfer(address indexed _from, address indexed _to, uint256 _value);\n    event Approval(address indexed _owner, address indexed _spender, uint256 _value); \n    \n    // Views: name, symbol, decimals, totalSupply, balanceOf, allowance\n    function name() external view returns (string memory);\n    function symbol() external view returns (string memory);\n    function decimals() external view returns (uint8);\n\n    function totalSupply() external view returns (uint256);\n    function balanceOf(address _owner) external view returns (uint256);\n    function allowance(address _owner, address _spender) external view returns (uint256 remaining);\n\n    // Effects: transfer, approve, transferFrom\n    function transfer(address _to, uint256 _amount) external returns (bool success);\n    function transferFrom(address _from, address _to, uint256 _amount) external returns (bool success);\n    function approve(address _spender, uint256 _value) external returns (bool success);\n}"
+      },
+      "project/contracts/erc20/MyTokenERC20.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\nimport {IERC20} from \"./IERC20.sol\";\n\nerror ERC20InsufficientBalance(address sender, uint256 balance, uint256 needed);\nerror ERC20InvalidSender(address sender);\nerror ERC20InvalidReceiver(address receiver);\nerror ERC20InsufficientAllowance(\n    address spender,\n    uint256 allowance,\n    uint256 needed\n);\nerror ERC20InvalidApprover(address approver);\nerror ERC20InvalidSpender(address spender);\n\ncontract MyTokenERC20 is IERC20 {\n    string public override name;\n    string public override symbol;\n    uint8 public override decimals;\n    uint256 public override totalSupply;\n\n    mapping(address account => uint256 balance) public override balanceOf;\n    mapping(address owner => mapping(address spender => uint256) allowance)\n        public\n        override allowance;\n\n    modifier checkTransfer(\n        address from,\n        address to) {\n        if (from == address(0)) {\n            revert ERC20InvalidSender(from);\n        }\n        if (to == address(0)) {\n            revert ERC20InvalidReceiver(to);\n        }        \n        _;\n    }\n\n    constructor(string memory _name, string memory _symbol, uint8 _decimals) {\n        name = _name;\n        symbol = _symbol;\n        decimals = _decimals;\n\n        uint256 totalAmount = 100_000_000 * (10 ** _decimals);\n        balanceOf[msg.sender] = totalAmount;\n        totalSupply = totalAmount;\n\n        emit Transfer(address(0), msg.sender, totalAmount);\n    }\n\n    function transfer(\n        address to,\n        uint256 value\n    ) public override returns (bool success) {\n        _sendTokens(msg.sender, to, value);\n\n        return true;\n    }\n\n    function approve(\n        address spender,\n        uint256 amount\n    ) public override returns (bool success) {\n        if (spender == address(0)) {\n            revert ERC20InvalidSpender(spender);\n        }\n\n        allowance[msg.sender][spender] = amount;\n\n        emit Approval(msg.sender, spender, amount);\n\n        return true;\n    }\n\n    function transferFrom(\n        address from,\n        address to,\n        uint256 amount\n    ) public  override checkTransfer(from, to) returns (bool success)  {\n        uint256 allowed = allowance[from][msg.sender];\n\n        if (from != msg.sender) {\n            uint256 _allowance = allowance[from][msg.sender];\n            if (_allowance < amount) {\n                revert ERC20InsufficientAllowance(\n                    msg.sender,\n                    _allowance,\n                    amount\n                );\n            }\n            unchecked { allowance[from][msg.sender] = allowed - amount; }\n        }\n\n        _sendTokens(from, to, amount);\n\n        return true;\n    }\n\n    function _sendTokens(address from, address to, uint256 amount) checkTransfer(from, to) internal {\n        uint256 balance = balanceOf[from];\n\n        if (balance < amount) {\n            revert ERC20InsufficientBalance(from, balance, amount);\n        }\n\n        unchecked {\n            balanceOf[from] = balance - amount;\n        }\n        balanceOf[to] += amount;\n\n        emit Transfer(from, to, amount);\n    }\n}\n"
+      }
+    }
+  }
+}
