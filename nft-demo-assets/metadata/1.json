@@ -1,8 +1,8 @@
 {
   "name": "Demo NFT #1",
   "description": "Demo NFT",
-  "image": "https://raw.githubusercontent.com/<GH_USER>/<REPO>/<BRANCH>/images/1.png",
-  "external_url": "https://github.com/<GH_USER>/<REPO>/blob/<BRANCH>/images/1.png",
+  "image": "https://raw.githubusercontent.com/lancelap/erc20-and-erc721/refs/heads/main/nft-demo-assets/images/1.png",
+  "external_url": "https://raw.githubusercontent.com/lancelap/erc20-and-erc721/refs/heads/main/nft-demo-assets/images/1.png",
   "attributes": [
     { "trait_type": "Demo", "value": "Yes" }
   ]
